@@ -31,13 +31,11 @@ would not let me use them unless I am owner of the repository. This would save m
 ## Logic
 I have built simple FastAPI backend which add data to the database as needed and returns data needed for analysis.
 The criteria, which the app adheres to can be described as follows:
-1. Check if the repository_name is already in database
-    i. in that case you should only retrieve new records otherwise, download whole data from the API
+1. User sends requests with data parameter
+    i. for every repository name app checks if data is already in databaes if it is, it only retrieves new records otherwise, downloads whole data from the API
     (Why to download whole data for new repository? -> I have assumed that the users would also like to be able to see the history and in real case for example agriculture sensors, vendors or ML team would want data for other usage (BI, ML, Data Analysis etc.))
-2. The app also checks rate limits as the app could potentially make more requests than permitted, resulting in connection errors from Streamline. 
-    That is why this app checks requests left, stops if needed, and waits until it can start to request data again. (When not requesting data, data refreshing is done from database to ensure that the app is running. This approach could be useful for instance if we had multiple users with their own apps contribution to the database. There cannot be duplicates as the app filters them out).
-
-3. UI is created simply with interactive tables in streamline. Why is that? Streamline is straightforward, lightweight, yet powerful library to crate PoC / simple product webpages.
+3. The app also checks rate limits as the app could potentially make more requests than permitted. 
+    That is why this app checks requests left, stops if needed, and waits until it can start to request data again. (One improvement could be that only getting data from github will stop but user can still get data from database (I have developed it when using Streamlit for UI, but that deviated from task description so changed it back to adhere to more normal REST API))
 
 ## Other possible solutions:
 1. If we considered not caring about storing the data, production costs and some efficiency could be improved by not using the database at all. Given some simple heuristic for refreshing data we can query maximally 500 data entries per requests, which is simultaneously the max amount from task definition, by simply querying the data and passing it to the UI, we can remove the step of writing and reading the data from database. For repositories, that have not been tracked recently, but have been in past, we could (given we can query maximally 500 events) simply query the data from the API and behave as if they were never considered. Not needing to host Database, we could lower our service costs, maintenance costs and improve development speed somewhere, where its needed more.
@@ -53,3 +51,20 @@ some logging could improve robustness of application.
 1. The date features for UI have to be transformed, but in order to use DateTypes in filtering / creating features it would be needed to retype features before using it fot analytics
 2. Since the data processing part of the app is quite small (2500 rows max), I would rather compute the features "on the go", because monitoring app features can change quite a lot and that would introduce sparse data in MongoDB. That could lead to messy schema and many not-anymore-used features, that get NaN values and are useless. Computing on the go seems more versatile and lightweight approach. However if the data processing part was quite big I would definitely precompute my features.
 
+## Other documentation
+API documents can be found by searching hosting page and adding /docs such as: 0.0.0.0:8000/docs. There can be found documentation about endpoints. Documentation of code can be found in docstrings.
+files:
+analytics.py - performs rolling statistics
+github.py - has class and methods to communicate with github api and I/O to database
+mongo_db.py - class to communicate with MongoDB database
+models.py - has database factory abstractclass
+main.py - defines endpoints
+
+## Word of caution
+I have worked mainly on cloud, where project structure and setup is given by cloud, so this might not be ideal or someone would do it differently, for that I am sorry, but have not had the chance to do
+so. To run the application just type: uvicorn main:app --host 0.0.0.0 --port 80 . 
+Database can be accessible by everyone and connection string is in main.py. (THIS WOULD NOT OBVIOUSLY BE DONE IN REAL SETTINGS, BUT FOR THIS USE CASE I LET IT THERE)
+
+## OTHER
+I have also implemented Streamlit UI that was interactive and communicated with backend, but due to specifications about the task I change it back to backend app. I can prepare and show the app in-person :). 
+ 
